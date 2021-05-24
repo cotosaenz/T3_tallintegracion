@@ -18,6 +18,8 @@ export default class App extends Component {
     messages: [],
     flights: [],
     positions: [],
+    planes: [],
+    p2: [],
     fp: {}
   }
 
@@ -45,15 +47,12 @@ export default class App extends Component {
       );
       var positions = [];
       var fp = {};
+      var planes = [];
       var c = 0;
       data.map( flight => {
-        var l = [];
-        var m = [];
-        l.push(flight.origin);
-        l.push(flight.code);
-        l.push(m);
-        positions.push(l);
+        positions.push(flight.origin);
         fp[flight.code] = c;
+        planes.push(c);
         c += 1;
         return 1;
         }
@@ -68,8 +67,11 @@ export default class App extends Component {
           fp
         }
       );
-      console.log('posiciones iniciales', this.state.positions);
-      console.log('fp', this.state.fp);
+      this.setState(
+        {
+          planes
+        }
+      );
     });
 
     socket.on("POSITION", (data) => {
@@ -77,34 +79,46 @@ export default class App extends Component {
       this.state.positions.map( p =>
         positions.push(p)
         )
-      positions[this.state.fp[data.code]][0] = data.position;
-      positions[this.state.fp[data.code]][2].push(data.position);
+      positions[this.state.fp[data.code]] = data.position;
+      let p2 = [...this.state.p2, data.position];
       this.setState(
         {
           positions
         }
       );
-      console.log('posiciones cambiadas', this.state.positions);
+      this.setState(
+        {
+          p2
+        }
+      );
     });
 
     socket.on("CHAT", (data) => {
       var f = new Date(data.date);
-      var c = f.toISOString();
-      var hour = (parseInt(c.slice(11,13)) - 4).toString()
+      var c = f.toLocaleString();
+      var hour = (parseInt(c.slice(11,13))).toString()
       var final = c.slice(0,10).replace(/-/g,"/") + ' '+ hour+c.slice(13,16);
-      console.log(final);
       let messages = [...this.state.messages, {
         name: data.name,
         date: final,
         message: data.message
       }];
-
-      this.setState(
-        {
-          messages
-        },
-        () => this.scrollToMyRef()
-      );
+      if(this.state.isLoggedIn) {
+        this.setState(
+          {
+            messages
+          },
+          () => this.scrollToMyRef()
+        );
+      }
+      else {
+        this.setState(
+          {
+            messages
+          }
+        );
+      }
+      // el html y css del chat me base de aca: https://www.bootdey.com/snippets/view/animated-chat-window#html
     });
   }
 
@@ -112,7 +126,7 @@ export default class App extends Component {
     const scroll = this.chatContainer.current.scrollHeight - this.chatContainer.current.clientHeight; 
     this.chatContainer.current.scrollTo(0, scroll);
   };
-  //https://codesandbox.io/s/8l2y0o24x9?file=/src/index.js:555-643
+  // esta funcion la obtuve de aca: https://codesandbox.io/s/8l2y0o24x9?file=/src/index.js:555-643
 
   render() {
     return (
@@ -132,10 +146,13 @@ export default class App extends Component {
                   {this.state.flights.map( flight =>
                     <Marker position={flight.destination} icon={Point}></Marker>
                   )}
-                  {this.state.positions.map( pos =>
-                    <Marker position={pos[0]} icon={Plane}>
+                  {this.state.p2.map( p =>
+                    <Marker position={p} icon={Point2}></Marker>
+                  )}
+                  {this.state.planes.map( plane =>
+                    <Marker position={this.state.positions[plane]} icon={Plane}>
                       <Popup>
-                        Code: {pos[1]} <br />
+                        Code: {this.state.flights[plane].code} <br />
                       </Popup>
                     </Marker>
                   )};
@@ -143,11 +160,9 @@ export default class App extends Component {
               </div>
               <div className="space"></div>
               <div className="flights_box">
-                Vuelos:
-                {this.state.flights.map( flight =>
-                  <li key={flight.code}>
-                    Code: {flight.code},  Airline: {flight.airline},  Origen: ({flight.origin[0]}, {flight.origin[1]}),  Destino: ({flight.destination[0]}, {flight.destination[1]}),  Plane: {flight.plane}.
-                  </li>
+                <h4>Vuelos:</h4>
+                {this.state.flights.map( flight => 
+                  <li key={flight.code}>Code: {flight.code},  Airline: {flight.airline},  Origen: ({flight.origin[0]}, {flight.origin[1]}),  Destino: ({flight.destination[0]}, {flight.destination[1]}),  Plane: {flight.plane}, Passangers: {flight.passengers[0].name}...</li>
                 )}
               </div>
             </div>

@@ -1,4 +1,5 @@
 import point from './icons/point.png';
+import point2 from './icons/point2.png';
 import plane from './icons/plane.png';
 import L from 'leaflet';
 
@@ -8,7 +9,7 @@ export const Point = L.icon({
 });
 
 export const Point2 = L.icon({
-  iconUrl: point,
+  iconUrl: point2,
   iconSize: [5 , 5]
 });
 
